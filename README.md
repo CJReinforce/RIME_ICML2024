@@ -29,7 +29,15 @@ Preference-based Reinforcement Learning (PbRL) avoids the need for reward engine
 
 ### Installation
 
-1. TODO: requirements.txt / conda_env.yml
+```bash
+conda env create -f conda_env.yml
+conda activate rime
+pip install -e .[docs,tests,extra]
+cd custom_dmc2gym
+pip install -e .
+```
+
+Install `mujoco` and `mujoco-py` according to [this link]( https://docs.google.com/document/d/1eBvfKoczKmImUgoGMbqypODBXmI1bD91/edit).
 
 ## Get Started
 

@@ -2,8 +2,8 @@ name: rime
 channels:
   - defaults
 dependencies:
-  - pip=23.2.1
   - python=3.9.17
+  - pip=23.2.1
   - cudatoolkit=11.1
   - pip:
     - setuptools==63.2.0
@@ -15,7 +15,11 @@ dependencies:
     - gym==0.21.0
     - metaworld==2.0.0
     - numpy==1.25.2
-    - tb-nightly==2.15.0a20230824
-    - tensorboard==2.14.0
+    - tb-nightly
     - torch==1.9.1+cu111
     - transformers==4.32.0
+    - imageio==2.31.1
+    - imageio-ffmpeg==0.4.8
+    - matplotlib==3.7.2
+    - glfw==1.11.2
+    - scikit-image==0.21.0
