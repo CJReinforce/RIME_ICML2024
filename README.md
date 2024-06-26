@@ -27,7 +27,28 @@ Preference-based Reinforcement Learning (PbRL) avoids the need for reward engine
 
 ## Requirements
 
-### Installation
+### Install MuJoCo 2.1
+
+```bash
+sudo apt update
+sudo apt install unzip gcc libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf libegl1 libopengl0
+sudo ln -s /usr/lib/x86_64-linux-gnu/libGL.so.1 /usr/lib/x86_64-linux-gnu/libGL.so
+mkdir ~/.mujoco
+cd ~/.mujoco
+wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz
+tar -zxvf mujoco210-linux-x86_64.tar.gz
+```
+
+Include the following lines in the `~/.bashrc` file:
+
+```bash
+export LD_LIBRARY_PATH=/root/.mujoco/mujoco210/bin
+export PATH="$LD_LIBRARY_PATH:$PATH"
+```
+
+Then run `source ~/.bashrc`
+
+### Install dependencies
 
 ```bash
 conda env create -f conda_env.yaml
@@ -35,11 +56,9 @@ conda activate rime
 pip install -e .[docs,tests,extra]
 cd custom_dmc2gym
 pip install -e .
-pip install git+https://github.com/rlworkgroup/metaworld.git@master#egg=metaworld
+pip install git+https://github.com/rlworkgroup/metaworld.git@04be337a12305e393c0caf0cbf5ec7755c7c8feb
 pip install torch==1.9.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
 ```
-
-Install `mujoco` and `mujoco-py` according to [this link]( https://docs.google.com/document/d/1eBvfKoczKmImUgoGMbqypODBXmI1bD91/edit).
 
 ## Get Started
 

@@ -23,3 +23,4 @@ dependencies:
     - matplotlib==3.7.2
     - glfw==1.11.2
     - scikit-image==0.21.0
+    - cython==0.29.36
