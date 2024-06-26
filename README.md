@@ -35,6 +35,8 @@ conda activate rime
 pip install -e .[docs,tests,extra]
 cd custom_dmc2gym
 pip install -e .
+pip install git+https://github.com/rlworkgroup/metaworld.git@master#egg=metaworld
+pip install torch==1.9.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 Install `mujoco` and `mujoco-py` according to [this link]( https://docs.google.com/document/d/1eBvfKoczKmImUgoGMbqypODBXmI1bD91/edit).

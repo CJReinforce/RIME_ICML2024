@@ -1,22 +1,22 @@
 name: rime
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - python=3.9.17
   - pip=23.2.1
   - cudatoolkit=11.1
+  - setuptools=63.2.0
+  - wheel=0.38.4
   - pip:
-    - setuptools==63.2.0
     - absl-py==1.4.0
     - pyparsing==3.0.9
     - termcolor==2.3.0
     - dm-control==1.0.14
     - pybullet==3.2.5
     - gym==0.21.0
-    - metaworld==2.0.0
     - numpy==1.25.2
     - tb-nightly
-    - torch==1.9.1+cu111
     - transformers==4.32.0
     - imageio==2.31.1
     - imageio-ffmpeg==0.4.8
