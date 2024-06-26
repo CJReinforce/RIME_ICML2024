@@ -30,7 +30,7 @@ Preference-based Reinforcement Learning (PbRL) avoids the need for reward engine
 ### Installation
 
 ```bash
-conda env create -f conda_env.yml
+conda env create -f conda_env.yaml
 conda activate rime
 pip install -e .[docs,tests,extra]
 cd custom_dmc2gym
