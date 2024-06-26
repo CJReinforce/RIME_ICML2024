@@ -37,12 +37,13 @@ mkdir ~/.mujoco
 cd ~/.mujoco
 wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz
 tar -zxvf mujoco210-linux-x86_64.tar.gz
+rm -f mujoco210-linux-x86_64.tar.gz
 ```
 
 Include the following lines in the `~/.bashrc` file:
 
 ```bash
-export LD_LIBRARY_PATH=/root/.mujoco/mujoco210/bin
+export LD_LIBRARY_PATH=~/.mujoco/mujoco210/bin
 export PATH="$LD_LIBRARY_PATH:$PATH"
 ```
 
