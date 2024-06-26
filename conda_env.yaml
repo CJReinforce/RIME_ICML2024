@@ -1,0 +1,21 @@
+name: rime
+channels:
+  - defaults
+dependencies:
+  - pip=23.2.1
+  - python=3.9.17
+  - cudatoolkit=11.1
+  - pip:
+    - setuptools==63.2.0
+    - absl-py==1.4.0
+    - pyparsing==3.0.9
+    - termcolor==2.3.0
+    - dm-control==1.0.14
+    - pybullet==3.2.5
+    - gym==0.21.0
+    - metaworld==2.0.0
+    - numpy==1.25.2
+    - tb-nightly==2.15.0a20230824
+    - tensorboard==2.14.0
+    - torch==1.9.1+cu111
+    - transformers==4.32.0
