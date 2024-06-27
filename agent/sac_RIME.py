@@ -1,12 +1,12 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-from transformers import get_constant_schedule_with_warmup
 import utils
-
 from agent import Agent
-from agent.critic import DoubleQCritic
 from agent.actor import DiagGaussianActor
+from agent.critic import DoubleQCritic
+from transformers import get_constant_schedule_with_warmup
+
 
 def compute_state_entropy(obs, full_obs, k):
     batch_size = 500
@@ -28,8 +28,7 @@ def compute_state_entropy(obs, full_obs, k):
 
 class SACAgent(Agent):
     """SAC algorithm."""
-    def __init__(self, obs_dim, action_dim, action_range, cfg,
-                 normalize_state_entropy=True):
+    def __init__(self, obs_dim, action_dim, action_range, cfg):
         super().__init__()
 
         self.obs_dim = obs_dim
@@ -45,8 +44,8 @@ class SACAgent(Agent):
         self.learnable_temperature = cfg.learnable_temperature
         self.critic_lr = cfg.critic_lr
         self.critic_betas = cfg.critic_betas
-        self.s_ent_stats = utils.TorchRunningMeanStd(shape=[1], device=cfg.device)
-        self.normalize_state_entropy = normalize_state_entropy
+        self.s_ent_stats = torch.tensor([np.inf, -np.inf], device=cfg.device) # min, max
+        self.state_ent = utils.TorchRunningMeanStd(shape=[1], device=cfg.device)
         self.init_temperature = cfg.init_temperature
         self.alpha_lr = cfg.alpha_lr
         self.alpha_betas = cfg.alpha_betas
@@ -179,23 +178,33 @@ class SACAgent(Agent):
         
         # compute state entropy
         state_entropy = compute_state_entropy(obs, full_obs, k=K)
+        state_entropy_max = state_entropy.max()
+        state_entropy_min = state_entropy.min()
         if print_flag:
             logger.log("train_critic/entropy", state_entropy.mean(), step)
-            logger.log("train_critic/entropy_max", state_entropy.max(), step)
-            logger.log("train_critic/entropy_min", state_entropy.min(), step)
+            logger.log("train_critic/entropy_max", state_entropy_max, step)
+            logger.log("train_critic/entropy_min", state_entropy_min, step)
         
-        self.s_ent_stats.update(state_entropy)
-        norm_state_entropy = state_entropy / self.s_ent_stats.std
+        if state_entropy_max > self.s_ent_stats[1]:
+            self.s_ent_stats[1] = state_entropy_max
+        if state_entropy_min < self.s_ent_stats[0]:
+            self.s_ent_stats[0] = state_entropy_min
+        
+        self.state_ent.update(state_entropy)
+
+        # normalize to [-1, 1]
+        norm_state_entropy = (state_entropy - self.state_ent.mean) / (3*self.state_ent.std)
+        torch.clip(norm_state_entropy, -1, 1, out=norm_state_entropy)
+        # scale = ((self.s_ent_stats - self.state_ent.mean) / self.state_ent.std).abs().max()
+        # norm_state_entropy /= scale
+        # norm_state_entropy = ((state_entropy - self.s_ent_stats[0]) / (self.s_ent_stats[1] - self.s_ent_stats[0]) - 0.5 ) * 2
         
         if print_flag:
             logger.log("train_critic/norm_entropy", norm_state_entropy.mean(), step)
             logger.log("train_critic/norm_entropy_max", norm_state_entropy.max(), step)
             logger.log("train_critic/norm_entropy_min", norm_state_entropy.min(), step)
-        
-        if self.normalize_state_entropy:
-            state_entropy = norm_state_entropy
-        
-        target_Q = state_entropy + (not_done * self.discount * target_V)
+                
+        target_Q = norm_state_entropy + (not_done * self.discount * target_V)
         target_Q = target_Q.detach()
 
         # get current Q estimates
@@ -212,6 +221,7 @@ class SACAgent(Agent):
         self.critic_optimizer.step()
 
         self.critic.log(logger, step)
+        return norm_state_entropy.cpu().detach().numpy()
     
     def save(self, model_dir, step):
         torch.save(
@@ -315,7 +325,7 @@ class SACAgent(Agent):
                 logger.log('train/batch_reward', reward.mean(), step)
                 print_flag = True
                 
-            self.update_critic_state_ent(
+            state_entropy = self.update_critic_state_ent(
                 obs, full_obs, action, next_obs, not_done_no_max,
                 logger, step, K=K, print_flag=print_flag)
 
@@ -325,3 +335,4 @@ class SACAgent(Agent):
         if step % self.critic_target_update_frequency == 0:
             utils.soft_update_params(self.critic, self.critic_target,
                                      self.critic_tau)
+        return obs.cpu().detach().numpy(), action.cpu().detach().numpy(), state_entropy

@@ -7,13 +7,14 @@ import gym
 import numpy as np
 import torch
 import utils
-from agent.sac_backup import SACAgent
+from agent.sac import SACAgent
 from config.PEBBLE import PEBBLEConfig
 from logger import Logger
 from replay_buffer import ReplayBuffer
 from reward_model import RewardModel, set_device
 
 
+# https://openai.com/index/learning-from-human-preferences/
 def reward_fn(a, ob):
     backroll = -ob[7]
     height = ob[0]
@@ -24,10 +25,10 @@ def reward_fn(a, ob):
 
 class Workspace:
     def __init__(self, cfg):
-        self.work_dir = os.getcwd()
+        self.work_dir = os.path.join(os.getcwd(), 'PEBBLE_human', cfg.env)
         self.cfg = cfg
         self.logger = Logger(
-            os.path.join(self.work_dir, 'PEBBLE_human', cfg.env),
+            self.work_dir,
             save_tb=cfg.log_save_tb,
             log_frequency=cfg.log_frequency,
             agent=cfg.agent_name,
@@ -86,14 +87,13 @@ class Workspace:
             teacher_eps_skip=cfg.teacher_eps_skip, 
             teacher_eps_equal=cfg.teacher_eps_equal,
             env=env_record,
-            video_recoder_dir='cj/PEBBLE/',
         )
         
     def evaluate(self):
         average_episode_reward = 0
         average_true_episode_reward = 0
         success_rate = 0
-        num_eval_episodes = self.cfg.num_eval_episodes if self.step < self.cfg.num_train_steps - 10*self.cfg.eval_frequency else 100
+        num_eval_episodes = self.cfg.num_eval_episodes
         
         for episode in range(num_eval_episodes):
             obs = self.env.reset()
@@ -319,8 +319,8 @@ class Workspace:
             self.step += 1
             interact_count += 1
             
-        agent_save_dir = os.path.join(self.work_dir, 'PEBBLE_human', self.cfg.env, 'agent')
-        reward_save_dir = os.path.join(self.work_dir, 'PEBBLE_human', self.cfg.env, 'reward')
+        agent_save_dir = os.path.join(self.work_dir, 'agent')
+        reward_save_dir = os.path.join(self.work_dir, 'reward')
         os.makedirs(agent_save_dir, exist_ok=True)
         os.makedirs(reward_save_dir, exist_ok=True)
         self.agent.save(agent_save_dir, self.step)

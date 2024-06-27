@@ -1,5 +1,5 @@
 from torch.cuda import is_available
-from time import time
+
 
 class MRNConfig:
     def __init__(self, args):
@@ -8,6 +8,8 @@ class MRNConfig:
         self.device = args.device or ('cuda' if is_available() else 'cpu')
         self.teacher_eps_equal = args.eps_equal or 0.0
         self.teacher_eps_mistake = args.eps_mistake or 0.0
+        self.teacher_gamma = args.teacher_gamma or 1.0
+        self.teacher_eps_skip = args.eps_skip or 0.0
         self.env = args.env or 'walker_walk'
         self.actor_lr = args.actor_lr or 0.0005
         self.critic_lr = args.critic_lr or 0.0005
@@ -24,6 +26,7 @@ class MRNConfig:
         self.actor_hidden_depth = args.actor_hidden_depth or 2
         self.feed_type = args.feed_type or 0  # 0: random, 1: uncertainty, 2: entropy
         self.ensemble_size = args.ensemble_size or 3
+        
         self.num_meta_steps = args.meta_steps or 1000
 
         # agent settings
@@ -64,8 +67,8 @@ class MRNConfig:
         # log settings
         self.log_save_tb = False
         self.log_frequency = 1000
-        self.eval_log_name = f'eval_MRN_mistake_{self.teacher_eps_mistake}_seed_{self.seed}_{time()}'
-        self.train_log_name = f'train_MRN_mistake_{self.teacher_eps_mistake}_seed_{self.seed}_{time()}'
+        self.eval_log_name = f'eval_MRN_mistake_{self.teacher_eps_mistake}_seed_{self.seed}'
+        self.train_log_name = f'train_MRN_mistake_{self.teacher_eps_mistake}_seed_{self.seed}'
 
         # scheduling
         self.reward_schedule = 0

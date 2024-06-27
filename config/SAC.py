@@ -1,5 +1,5 @@
 from torch.cuda import is_available
-from time import time
+
 
 class SACConfig:
     def __init__(self, args):
@@ -44,8 +44,8 @@ class SACConfig:
         # log settings
         self.log_save_tb = False
         self.log_frequency = 1000
-        self.eval_log_name = f'eval_SAC_seed_{self.seed}_{time()}'
-        self.train_log_name = f'train_SAC_seed_{self.seed}_{time()}'
+        self.eval_log_name = f'eval_SAC_seed_{self.seed}'
+        self.train_log_name = f'train_SAC_seed_{self.seed}'
 
         # video recorder
         self.save_video = False

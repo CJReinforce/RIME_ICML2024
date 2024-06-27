@@ -2,8 +2,8 @@ import argparse
 import os
 import time
 
-import torch
 import numpy as np
+import torch
 import utils
 from agent.sac import SACAgent
 from config.SAC import SACConfig
@@ -56,7 +56,7 @@ class Workspace:
         average_episode_reward = 0
         if self.log_success:
             success_rate = 0
-        num_eval_episodes = self.cfg.num_eval_episodes if self.step < self.cfg.num_train_steps - 10*self.cfg.eval_frequency else 100
+        num_eval_episodes = self.cfg.num_eval_episodes
         
         for episode in range(num_eval_episodes):
             obs = self.env.reset()
@@ -176,35 +176,22 @@ class Workspace:
             obs = next_obs
             episode_step += 1
             self.step += 1
-
-        # self.agent.save(self.work_dir, self.step)
-
-        # save trajectory
-        # os.makedirs(os.path.join(self.work_dir, 'saved_trajectories', 'SAC'), exist_ok=True)
-        # random = time.time()
-        # np.save(os.path.join(self.work_dir, 'saved_trajectories', 'SAC', f'obs_{random}.npy'), self.replay_buffer.obses)
-        # np.save(os.path.join(self.work_dir, 'saved_trajectories', 'SAC', f'acts_{random}.npy'), self.replay_buffer.actions)
-        # np.save(os.path.join(self.work_dir, 'saved_trajectories', 'SAC', f'rews_{random}.npy'), self.replay_buffer.rewards)
-        # np.save(os.path.join(self.work_dir, 'saved_trajectories', 'SAC', f'next_obs_{random}.npy'), self.replay_buffer.next_obses)
-        # np.save(os.path.join(self.work_dir, 'saved_trajectories', 'SAC', f'dones_{random}.npy'), self.replay_buffer.not_dones)
-        # np.save(os.path.join(self.work_dir, 'saved_trajectories', 'SAC', f'dones_no_max_{random}.npy'), self.replay_buffer.not_dones_no_max)
         
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--batch_size', type=int, default=1024)
-    parser.add_argument('--steps', type=int, default=500_000)
-    parser.add_argument('--critic_hidden_dim', type=int, default=1024)
-    parser.add_argument('--actor_hidden_dim', type=int, default=1024)
-    parser.add_argument('--critic_hidden_depth', type=int, default=2)
-    parser.add_argument('--actor_hidden_depth', type=int, default=2)
-    parser.add_argument('--env', type=str, default='walker_walk')
-    parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--device', type=str, default='cuda:0')
-    parser.add_argument('--actor_lr', type=float, default=5e-4)
-    parser.add_argument('--critic_lr', type=float, default=5e-4)
+    parser.add_argument('-b', '--batch_size', type=int)
+    parser.add_argument('--steps', type=int)
+    parser.add_argument('--critic_hidden_dim', type=int)
+    parser.add_argument('--actor_hidden_dim', type=int)
+    parser.add_argument('--critic_hidden_depth', type=int)
+    parser.add_argument('--actor_hidden_depth', type=int)
+    parser.add_argument('--env', type=str)
+    parser.add_argument('--seed', type=int)
+    parser.add_argument('--device', type=str)
+    parser.add_argument('--actor_lr', type=float)
+    parser.add_argument('--critic_lr', type=float)
     args = parser.parse_args()
-
     cfg = SACConfig(args)
     workspace = Workspace(cfg)
     workspace.run()

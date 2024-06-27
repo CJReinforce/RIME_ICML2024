@@ -1,5 +1,5 @@
 from torch.cuda import is_available
-from time import time
+
 
 class PEBBLEConfig:
     def __init__(self, args):
@@ -65,8 +65,8 @@ class PEBBLEConfig:
         # log settings
         self.log_save_tb = False
         self.log_frequency = 1000
-        self.eval_log_name = f'eval_PEBBLE_mistake_{self.teacher_eps_mistake}_seed_{self.seed}_{time()}'
-        self.train_log_name = f'train_PEBBLE_mistake_{self.teacher_eps_mistake}_seed_{self.seed}_{time()}'
+        self.eval_log_name = f'eval_PEBBLE_mistake_{self.teacher_eps_mistake}_seed_{self.seed}'
+        self.train_log_name = f'train_PEBBLE_mistake_{self.teacher_eps_mistake}_seed_{self.seed}'
 
         # scheduling
         self.reward_schedule = 0

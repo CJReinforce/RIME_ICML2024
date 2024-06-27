@@ -70,13 +70,24 @@ pip install torch==1.9.1+cu111 -f https://download.pytorch.org/whl/torch_stable.
 
 ### Configs
 
-Set hyperparameters in `run_parallel.sh`.
+Set hyperparameters in the all-in-one script `run_parallel.sh`, including the name of algorithm, hyperparameters of the algorithm and env, index of GPU for each random seed, etc.
 
 ### Running
+
+For simulated (scripted) teachers:
 
 ```bash
 bash run_parallel.sh
 ```
+
+This will enable multi-threading to run experiments with multiple random seeds simultaneously.
+
+For real human teachers (requires online annotation):
+```bash
+bash run_human_labeller.sh
+```
+
+When entering the annotation phase, run `label_program.ipynb` to annotate human preferences.
 
 ## Acknowledgement
 

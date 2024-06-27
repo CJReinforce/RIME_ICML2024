@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import utils
-from agent.sac import SACAgent, compute_state_entropy
+from agent.sac_RIME import SACAgent, compute_state_entropy
 from config.RIME import RIMEConfig
 from logger import Logger
 from replay_buffer import ReplayBuffer
@@ -16,10 +16,10 @@ from reward_model_RIME import RIMERewardModel, set_device_RIME
 
 class Workspace:
     def __init__(self, cfg):
-        self.work_dir = os.getcwd()
+        self.work_dir = os.path.join(os.getcwd(), 'RIME', cfg.env)
         self.cfg = cfg
         self.logger = Logger(
-            os.path.join(self.work_dir, 'RIME', cfg.env),
+            self.work_dir,
             save_tb=cfg.log_save_tb,
             log_frequency=cfg.log_frequency,
             agent=cfg.agent_name,
@@ -95,7 +95,7 @@ class Workspace:
         average_episode_reward = 0
         average_true_episode_reward = 0
         success_rate = 0
-        num_eval_episodes = self.cfg.num_eval_episodes  # if self.step < self.cfg.num_train_steps - 10*self.cfg.eval_frequency else 100
+        num_eval_episodes = self.cfg.num_eval_episodes
         
         for episode in range(num_eval_episodes):
             obs = self.env.reset()
@@ -335,9 +335,6 @@ class Workspace:
                     unsup_rew_loss.backward()
                     self.reward_model.opt.step()
                 
-                if self.step % 500 == 0:
-                    print(f"state entropy loss: {unsup_rew_loss.item()}, step: {self.step}, seed: {self.cfg.seed}")
-                
             next_obs, reward, done, extra = self.env.step(action)
             reward_hat = self.reward_model.r_hat(np.concatenate([obs, action], axis=-1))
 
@@ -360,27 +357,25 @@ class Workspace:
             episode_step += 1
             self.step += 1
             interact_count += 1
-
-            # debug
-            if self.step % 100_000 == 0:
-                print('Debug:', self.reward_model.history_info)
-            
-        self.agent.save(self.work_dir, self.step)
-        self.reward_model.save(self.work_dir, self.step)
+        
+        save_dir = os.path.join(self.work_dir, f'mistake_{self.cfg.teacher_eps_mistake}_seed_{self.cfg.seed}')
+        os.makedirs(save_dir, exist_ok=True)
+        self.agent.save(save_dir, self.step)
+        self.reward_model.save(save_dir, self.step)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--seed', type=int)
-    parser.add_argument('--device', type=str)
-    parser.add_argument('--env', type=str)
     parser.add_argument('--least_reward_update', type=int)
     parser.add_argument('--threshold_variance', type=str)
     parser.add_argument('--threshold_alpha', type=float)
     parser.add_argument('--threshold_beta_init', type=float)
     parser.add_argument('--threshold_beta_min', type=float)
+    
+    parser.add_argument('--seed', type=int)
+    parser.add_argument('--device', type=str)
+    parser.add_argument('--env', type=str)
     parser.add_argument('--eps_mistake', type=float)
-
     parser.add_argument('--eps_equal', type=float)
     parser.add_argument('--eps_skip', type=float)
     parser.add_argument('--teacher_gamma', type=float)

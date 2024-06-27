@@ -24,3 +24,4 @@ dependencies:
     - glfw==1.11.2
     - scikit-image==0.21.0
     - cython==0.29.36
+    - mujoco==2.3.7

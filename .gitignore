@@ -56,6 +56,8 @@ figures
 figure/
 data/
 
+conda*.txt
+
 PEBBLE/
 RIME/
 MRN/

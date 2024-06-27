@@ -93,7 +93,7 @@ class Workspace:
         average_true_episode_reward = 0
         if self.log_success:
             success_rate = 0
-        num_eval_episodes = self.cfg.num_eval_episodes if self.step < self.cfg.num_train_steps - 10*self.cfg.eval_frequency else 100
+        num_eval_episodes = self.cfg.num_eval_episodes
 
         for episode in range(num_eval_episodes):
             obs = self.env.reset()
@@ -447,34 +447,33 @@ class Workspace:
             self.step += 1
             interact_count += 1
 
-        # self.agent.save(self.work_dir, self.step)
-        # self.reward_model.save(self.work_dir, self.step)
-
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--device', type=str, default='cuda:0')
-    parser.add_argument('--eps_equal', type=float, default=0.0)
-    parser.add_argument('--env', type=str, default='walker_walk')
-    parser.add_argument('--actor_lr', type=float, default=5e-4)
-    parser.add_argument('--critic_lr', type=float, default=5e-4)
-    parser.add_argument('--unsup_steps', type=int, default=9000)
-    parser.add_argument('--steps', type=int, default=500_000)
-    parser.add_argument('--num_interact', type=int, default=20000)
-    parser.add_argument('--max_feedback', type=int, default=1000)
-    parser.add_argument('--reward_batch', type=int, default=100)
-    parser.add_argument('--reward_update', type=int, default=50)
+    parser.add_argument('--meta_steps', type=int)
     
-    parser.add_argument('-b', '--batch_size', type=int, default=1024)
-    parser.add_argument('--critic_hidden_dim', type=int, default=1024)
-    parser.add_argument('--actor_hidden_dim', type=int, default=1024)
-    parser.add_argument('--critic_hidden_depth', type=int, default=2)
-    parser.add_argument('--actor_hidden_depth', type=int, default=2)
-    parser.add_argument('--eps_mistake', type=float, default=0.0)
-    parser.add_argument('--feed_type', type=int, default=0)
-    parser.add_argument('--ensemble_size', type=int, default=3)
-    parser.add_argument('--meta_steps', type=int, default=1000)
+    parser.add_argument('--seed', type=int)
+    parser.add_argument('--device', type=str)
+    parser.add_argument('--eps_equal', type=float)
+    parser.add_argument('--eps_skip', type=float)
+    parser.add_argument('--teacher_gamma', type=float)
+    parser.add_argument('--env', type=str)
+    parser.add_argument('--actor_lr', type=float)
+    parser.add_argument('--critic_lr', type=float)
+    parser.add_argument('--unsup_steps', type=int)
+    parser.add_argument('--steps', type=int)
+    parser.add_argument('--num_interact', type=int)
+    parser.add_argument('--max_feedback', type=int)
+    parser.add_argument('--reward_batch', type=int)
+    parser.add_argument('--reward_update', type=int)
+    parser.add_argument('-b', '--batch_size', type=int)
+    parser.add_argument('--critic_hidden_dim', type=int)
+    parser.add_argument('--actor_hidden_dim', type=int)
+    parser.add_argument('--critic_hidden_depth', type=int)
+    parser.add_argument('--actor_hidden_depth', type=int)
+    parser.add_argument('--eps_mistake', type=float)
+    parser.add_argument('--feed_type', type=int)
+    parser.add_argument('--ensemble_size', type=int)
     args = parser.parse_args()
     cfg = MRNConfig(args)
     set_device(cfg.device)

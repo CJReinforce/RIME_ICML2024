@@ -6,7 +6,7 @@ from collections import deque
 import numpy as np
 import torch
 import utils
-from agent.sac_backup import SACAgent
+from agent.sac import SACAgent
 from config.PEBBLE import PEBBLEConfig
 from logger import Logger
 from replay_buffer import ReplayBuffer
@@ -78,7 +78,7 @@ class Workspace:
         average_episode_reward = 0
         average_true_episode_reward = 0
         success_rate = 0
-        num_eval_episodes = self.cfg.num_eval_episodes if self.step < self.cfg.num_train_steps - 10*self.cfg.eval_frequency else 100
+        num_eval_episodes = self.cfg.num_eval_episodes
         
         for episode in range(num_eval_episodes):
             obs = self.env.reset()
@@ -315,9 +315,6 @@ class Workspace:
             episode_step += 1
             self.step += 1
             interact_count += 1
-            
-        # self.agent.save(self.work_dir, self.step)
-        # self.reward_model.save(self.work_dir, self.step)
 
 
 def main():

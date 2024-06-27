@@ -3,267 +3,20 @@ import os
 import time
 from collections import deque
 
-import numpy as np
 import gym
+import numpy as np
 import torch
 import torch.nn.functional as F
-from transformers import get_constant_schedule_with_warmup
-
 import utils
-from agent.sac import SACAgent, compute_state_entropy
+from agent.sac_RIME import SACAgent, compute_state_entropy
 from config.RIME import RIMEConfig
 from logger import Logger
 from replay_buffer import ReplayBuffer
-from reward_model import RewardModel, set_device
+from reward_model_RIME import RIMERewardModel, set_device_RIME
+from transformers import get_constant_schedule_with_warmup
 
 
-def get_upper_quarter(data):
-    return np.percentile(data, 100)
-
-class RunningMeanStd:
-    def __init__(self, mean=0, std=1.0, epsilon=np.finfo(np.float32).eps.item(), 
-                 mode='common', lr=0.1):
-        self.mean, self.var = mean, std
-        self.max, self.quarter = mean, mean
-        self.count = 0
-        self.eps = epsilon
-        self.lr = lr
-        self.mode = mode
-
-    def print_info(self):
-        return {'mean': self.mean, 'var': self.var, 'max': self.max, 'quarter': self.quarter}
-
-    def update(self, data_array) -> None:
-        """Add a batch of item into RMS with the same shape, modify mean/var/count."""
-        batch_mean, batch_var = np.mean(data_array, axis=0), np.var(data_array, axis=0)
-        batch_count = len(data_array)
-
-        delta = batch_mean - self.mean
-        total_count = self.count + batch_count
-
-        if self.mode == 'common':
-            new_mean = self.mean + delta * batch_count / total_count
-            new_max = self.max + (np.max(data_array)-self.max) / total_count
-            new_quarter = self.quarter + (get_upper_quarter(data_array)-self.quarter) / total_count
-        else:
-            new_mean = self.mean + delta * self.lr
-            new_max = self.max + (np.max(data_array)-self.max) * self.lr
-            new_quarter = self.quarter + (get_upper_quarter(data_array)-self.quarter) * self.lr
-        m_a = self.var * self.count
-        m_b = batch_var * batch_count
-        m_2 = m_a + m_b + delta**2 * self.count * batch_count / total_count
-        new_var = m_2 / total_count
-
-        self.mean, self.var = new_mean, new_var
-        self.count = total_count
-        self.max = new_max
-        self.quarter = new_quarter
-
-
-class OurRewardModel(RewardModel):
-    def __init__(
-            self, 
-            seed:int,
-            k=600,
-            device='cuda' if torch.cuda.is_available() else 'cpu', 
-            threshold_variance='prob', 
-            threshold_alpha=0.5,
-            threshold_beta_init=1.0,
-            threshold_beta_min=0.1,
-            flipping_tau=0.01,
-            num_warmup_steps=50,
-            *args, **kwargs
-        ):
-        super().__init__(*args, **kwargs)
-        self.lr_schedule = None
-        self.seed = seed
-        self.device = device
-        self.k = k
-        self.KL_div = RunningMeanStd(mode='fixed', lr=0.1)
-        assert threshold_variance.lower() in ['kl', 'prob']
-        self.threshold_variance = threshold_variance
-        self.threshold_alpha = threshold_alpha
-        self.threshold_beta_init = threshold_beta_init
-        self.threshold_beta_min = threshold_beta_min
-        self.flipping_tau = flipping_tau
-        self.num_warmup_steps = num_warmup_steps
-        
-        config = {
-            'device': self.device, 
-            'threshold_variance': self.threshold_variance, 
-            'threshold_alpha': self.threshold_alpha, 
-            'threshold_beta_init': self.threshold_beta_init, 
-            'threshold_beta_min': self.threshold_beta_min, 
-            'eps_mistake': self.teacher_eps_mistake, 
-            'eps_equal': self.teacher_eps_equal, 
-            # 'lr_schedule': self.lr_schedule.get_last_lr()[0],
-            'warmup_steps': num_warmup_steps,
-            'seed': self.seed
-        }
-        print(f'Reward model config: {config}')
-        self.update_step = 0
-        self.trust_sample_index = None
-
-        # debug
-        self.history_info = {}
-    
-    def set_lr_schedule(self):
-        self.lr_schedule = get_constant_schedule_with_warmup(self.opt, self.num_warmup_steps)
-
-    def get_threshold_beta(self):
-        return max(self.threshold_beta_min, -(self.threshold_beta_init-self.threshold_beta_min)/self.k*self.update_step + self.threshold_beta_init)
-    
-    def train_reward(self, debug=False, trust_sample=True, label_flipping=True):
-        ensemble_losses = [[] for _ in range(self.de)]
-        ensemble_acc = np.array([0 for _ in range(self.de)])
-        max_len = self.capacity if self.buffer_full else self.buffer_index
-
-        # compute trust samples
-        p_hat_all = []
-        with torch.no_grad():
-            for member in range(self.de):
-                r_hat1 = self.r_hat_member(self.buffer_seg1[:max_len], member=member)
-                r_hat2 = self.r_hat_member(self.buffer_seg2[:max_len], member=member)
-                r_hat1 = r_hat1.sum(axis=1)
-                r_hat2 = r_hat2.sum(axis=1)
-                r_hat = torch.cat([r_hat1, r_hat2], axis=-1)  # (max_len, 2)
-                assert r_hat.shape == (max_len, 2)
-                p_hat_all.append(F.softmax(r_hat, dim=-1).cpu())
-        
-        # predict label for all ensemble members
-        p_hat_all = torch.stack(p_hat_all)  # (de, max_len, 2)
-        assert p_hat_all.shape == (self.de, max_len, 2)
-        
-        # compute KL divergence
-        predict_label = p_hat_all.mean(0)  # (max_len, 2)
-        assert predict_label.shape == (max_len, 2)
-        target_label = torch.zeros_like(predict_label).scatter(1, torch.from_numpy(self.buffer_label[:max_len].flatten()).long().unsqueeze(1), 1)
-        KL_div = (-target_label * torch.log(predict_label)).sum(1)  # (max_len,)
-        
-        # filter trust samples
-        x = self.KL_div.quarter
-        # baseline = 1 - self.threshold_alpha*x
-        baseline = -np.log(x+1e-8) + self.threshold_alpha*x
-        if self.threshold_variance == 'prob':
-            uncertainty = self.get_threshold_beta() * predict_label[:, 0].std(0)
-        else:
-            uncertainty = min(self.get_threshold_beta() * self.KL_div.var, 3.0)
-        trust_sample_bool_index = KL_div < baseline + uncertainty
-        trust_sample_index = np.where(trust_sample_bool_index)[0]
-        self.trust_sample_index = trust_sample_index
-
-        # label flipping
-        # x = self.KL_div.max
-        # baseline_flipping = max(1.5, -np.log(x) + x/2, baseline)
-        flipping_threshold = -np.log(self.flipping_tau)  # baseline_flipping + uncertainty
-        flipping_sample_bool_index = KL_div > flipping_threshold
-        flipping_sample_index = np.where(flipping_sample_bool_index)[0]
-        
-        # update KL divergence statistics of trust samples
-        self.KL_div.update(KL_div[trust_sample_bool_index].numpy())
-
-        # accuracy of predicted trust samples
-        accurate_samples = (self.buffer_label[:max_len][trust_sample_bool_index] == self.buffer_GT_label[:max_len][trust_sample_bool_index]).sum()
-        trust_samples = len(trust_sample_index)
-        accuracy = accurate_samples / trust_samples
-        # recall of predicted trust samples
-        recall_samples = (self.buffer_label[:max_len][~trust_sample_bool_index] == self.buffer_GT_label[:max_len][~trust_sample_bool_index]).sum()
-        non_trust_samples = max_len - trust_samples
-        recall = recall_samples / non_trust_samples if non_trust_samples > 0 else 0.0
-        # flipping accuracy
-        # temporarily flipping
-        self.buffer_label[flipping_sample_index] = 1-self.buffer_label[flipping_sample_index]
-        flipping_correct = (self.buffer_label[flipping_sample_index] == self.buffer_GT_label[flipping_sample_index]).sum()
-        flipping_samples = len(flipping_sample_index)
-        flipping_accuracy = flipping_correct / flipping_samples if flipping_samples > 0 else 0.0
-
-        if debug:
-            print('#'*10, self.seed, '#'*10)
-            self.history_info = {
-                'trust sample ratio': len(trust_sample_index)/max_len, 
-                'KL_div': self.KL_div.print_info(), 
-                'predict_label_div': predict_label[:, 0].std(0).item(), 
-                'beta': self.get_threshold_beta(), 
-                'baseline': baseline, 
-                'uncertainty': uncertainty, 
-                'threshold': baseline+uncertainty, 
-                'flipping_threshold': flipping_threshold, 
-                'update_step': self.update_step,
-                'lr': self.lr_schedule.get_last_lr()[0],
-                'seed': self.seed,
-                'accuracy': [accurate_samples, trust_samples, accuracy], 
-                'recall': [recall_samples, non_trust_samples, recall], 
-                'flipping_accuracy': [flipping_correct, flipping_samples, flipping_accuracy]
-            }
-            print(self.history_info)
-        
-        if trust_sample and label_flipping:
-            training_sample_index = np.concatenate([trust_sample_index, flipping_sample_index])
-        elif not trust_sample and label_flipping:
-            training_sample_index = np.arange(max_len)
-        elif trust_sample and not label_flipping:
-            training_sample_index = trust_sample_index
-        else:
-            training_sample_index = np.arange(max_len)
-        
-        max_len = len(training_sample_index)
-        total_batch_index = []
-        for _ in range(self.de):
-            total_batch_index.append(np.random.permutation(training_sample_index))
-        
-        num_epochs = int(np.ceil(max_len/self.train_batch_size))
-        total = 0
-        
-        for epoch in range(num_epochs):
-            self.opt.zero_grad()
-            loss = 0.0
-            
-            last_index = (epoch+1)*self.train_batch_size
-            if last_index > max_len:
-                last_index = max_len
-                
-            for member in range(self.de):
-                
-                # get random batch
-                idxs = total_batch_index[member][epoch*self.train_batch_size:last_index]
-                sa_t_1 = self.buffer_seg1[idxs]
-                sa_t_2 = self.buffer_seg2[idxs]
-                labels = self.buffer_label[idxs]
-                labels = torch.from_numpy(labels.flatten()).long().to(self.device)
-                
-                if member == 0:
-                    total += labels.size(0)
-                
-                # get logits
-                r_hat1 = self.r_hat_member(sa_t_1, member=member)
-                r_hat2 = self.r_hat_member(sa_t_2, member=member)
-                r_hat1 = r_hat1.sum(axis=1)
-                r_hat2 = r_hat2.sum(axis=1)
-                r_hat = torch.cat([r_hat1, r_hat2], axis=-1)
-
-                # compute loss
-                curr_loss = self.CEloss(r_hat, labels)
-                loss += curr_loss
-                ensemble_losses[member].append(curr_loss.item())
-                
-                # compute acc
-                _, predicted = torch.max(r_hat.data, 1)
-                correct = (predicted == labels).sum().item()
-                ensemble_acc[member] += correct
-                
-            loss.backward()
-            self.opt.step()
-        self.lr_schedule.step()
-        
-        # change back
-        self.buffer_label[flipping_sample_index] = 1-self.buffer_label[flipping_sample_index]
-        
-        ensemble_acc = ensemble_acc / total
-        self.update_step += 1
-        
-        return ensemble_acc
-
-
+# https://openai.com/index/learning-from-human-preferences/
 def reward_fn(a, ob):
     backroll = -ob[7]
     height = ob[0]
@@ -322,7 +75,7 @@ class Workspace:
         self.step = 0
 
         # instantiating the reward model
-        self.reward_model = OurRewardModel(
+        self.reward_model = RIMERewardModel(
             cfg.seed,
             device=self.device,
             k=k,
@@ -347,14 +100,13 @@ class Workspace:
             teacher_eps_skip=cfg.teacher_eps_skip, 
             teacher_eps_equal=cfg.teacher_eps_equal,
             env=env_record,
-            video_recoder_dir='cj',
         )
         
     def evaluate(self):
         average_episode_reward = 0
         average_true_episode_reward = 0
         success_rate = 0
-        num_eval_episodes = self.cfg.num_eval_episodes if self.step < self.cfg.num_train_steps - 10*self.cfg.eval_frequency else 100
+        num_eval_episodes = self.cfg.num_eval_episodes
         
         for episode in range(num_eval_episodes):
             obs = self.env.reset()
@@ -555,19 +307,6 @@ class Workspace:
                         self.learn_reward()
                         self.replay_buffer.relabel_with_predictor(self.reward_model)
                         interact_count = 0
-                
-                # save the last trust trajectories
-                # elif not self.saved_tau:
-                #     seg1 = self.reward_model.buffer_seg1.copy()
-                #     seg2 = self.reward_model.buffer_seg2.copy()
-                #     trust_seg1 = seg1[self.reward_model.trust_sample_index].reshape(len(self.reward_model.trust_sample_index), -1)
-                #     trust_seg2 = seg2[self.reward_model.trust_sample_index].reshape(len(self.reward_model.trust_sample_index), -1)
-                #     trust_seg = np.vstack((trust_seg1, trust_seg2))
-                #     dir_name = os.path.join(self.work_dir, 'saved_trajectories', 'RIME_lr_schedule', f'mistake_{self.cfg.teacher_eps_mistake}')
-                #     os.makedirs(dir_name, exist_ok=True)
-                #     random = time.time()
-                #     np.save(os.path.join(dir_name, f'trust_tau_seed_{self.cfg.seed}_{random}.npy'), trust_seg)
-                #     self.saved_tau = True
 
                 self.agent.update(self.replay_buffer, self.logger, self.step, 1)
                 
@@ -595,9 +334,6 @@ class Workspace:
                     unsup_rew_loss.backward()
                     self.reward_model.opt.step()
                 
-                if self.step % 500 == 0:
-                    print(f"state entropy loss: {unsup_rew_loss.item()}, step: {self.step}, seed: {self.cfg.seed}")
-                
             next_obs, _, done, extra = self.env.step(action)
             reward = reward_fn(action, obs[1:])
             reward_hat = self.reward_model.r_hat(np.concatenate([obs, action], axis=-1))
@@ -621,10 +357,6 @@ class Workspace:
             episode_step += 1
             self.step += 1
             interact_count += 1
-
-            # debug
-            if self.step % 100_000 == 0:
-                print('Debug:', self.reward_model.history_info)
         
         agent_save_dir = os.path.join(self.work_dir, 'RIME_human', self.cfg.env, 'agent')
         reward_save_dir = os.path.join(self.work_dir, 'RIME_human', self.cfg.env, 'reward')
@@ -644,8 +376,8 @@ def main():
     parser.add_argument('--threshold_alpha', type=float)
     parser.add_argument('--threshold_beta_init', type=float)
     parser.add_argument('--threshold_beta_min', type=float)
+    
     parser.add_argument('--eps_mistake', type=float)
-
     parser.add_argument('--eps_equal', type=float)
     parser.add_argument('--eps_skip', type=float)
     parser.add_argument('--teacher_gamma', type=float)
@@ -666,7 +398,7 @@ def main():
     parser.add_argument('--ensemble_size', type=int)
     args = parser.parse_args()
     cfg = RIMEConfig(args)
-    set_device(cfg.device)
+    set_device_RIME(cfg.device)
     workspace = Workspace(cfg)
     workspace.run()
 

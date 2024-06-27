@@ -1,5 +1,5 @@
 from torch.cuda import is_available
-from time import time
+
 
 class SURFConfig:
     def __init__(self, args):
@@ -15,6 +15,8 @@ class SURFConfig:
         self.device = args.device or ('cuda' if is_available() else 'cpu')
         self.teacher_eps_equal = args.eps_equal or 0.0
         self.teacher_eps_mistake = args.eps_mistake or 0.0
+        self.teacher_gamma = args.teacher_gamma or 1.0
+        self.teacher_eps_skip = args.eps_skip or 0.0
         self.env = args.env or 'walker_walk'
         self.actor_lr = args.actor_lr or 1e-4
         self.critic_lr = args.critic_lr or 1e-4
@@ -69,8 +71,8 @@ class SURFConfig:
         # log settings
         self.log_save_tb = False
         self.log_frequency = 1000
-        self.eval_log_name = f'eval_SURF_mistake_{self.teacher_eps_mistake}_seed_{self.seed}_{time()}'
-        self.train_log_name = f'train_SURF_mistake_{self.teacher_eps_mistake}_seed_{self.seed}_{time()}'
+        self.eval_log_name = f'eval_SURF_mistake_{self.teacher_eps_mistake}_seed_{self.seed}'
+        self.train_log_name = f'train_SURF_mistake_{self.teacher_eps_mistake}_seed_{self.seed}'
 
         # scheduling
         self.reward_schedule = 0

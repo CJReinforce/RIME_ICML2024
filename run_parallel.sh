@@ -1,15 +1,16 @@
 #!/bin/bash
 
 run_command() {
+    # parameters of simulated teachers
     eps_mistake=0.3
     eps_skip=0.0
     eps_equal=0.0
     teacher_gamma=1.0
+    
+    # run which algorithm, in [sac, pebble, surf, rune, mrn, rime]
     algorithm='pebble'
 
-    # parameters for algorithms
-    # PEBBLE (robust algorithm): ['', 'MAE', 'tCE', 'ADT', 'LS']
-    robust_algo=''
+    # parameters that change with env for algorithms
     # RIME
     unsup_steps=9000  # 2000 for cheetah_run otherwise 9000
     # MRN
@@ -18,12 +19,6 @@ run_command() {
     rho=0.00001
     # SURF
     tau=0.99
-
-    # envname="Hopper_v3"
-    # sac_lr=0.0005
-    # num_interact=10000
-    # feedback=500
-    # reward_batch=100
 
     envname="walker_walk"
     sac_lr=0.0005
@@ -55,12 +50,6 @@ run_command() {
     # feedback=20000
     # reward_batch=100
 
-    # envname="metaworld_drawer-open-v2"
-    # sac_lr=0.0003
-    # num_interact=5000
-    # feedback=10000
-    # reward_batch=100
-
     # envname="metaworld_hammer-v2"
     # sac_lr=0.0003
     # num_interact=5000
@@ -74,10 +63,10 @@ run_command() {
     if [ "$algorithm" == "sac" ]; then
         case "$envname" in
         *metaworld*)
-            python train_SAC.py --device=$device --env="$envname" --seed=$seed --actor_lr=$sac_lr --critic_lr=$sac_lr --steps=1000000 --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 >> "./reward_model_log_SAC_env_"$envname".txt" 2>&1
+            python train_SAC.py --device=$device --env="$envname" --seed=$seed --actor_lr=$sac_lr --critic_lr=$sac_lr --steps=1000000 --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 > "./SAC_env_"$envname"_seed_"$seed".log" 2>&1
             ;;
         *)
-            python train_SAC.py --device=$device --env="$envname" --seed=$seed --actor_lr=$sac_lr --critic_lr=$sac_lr --steps=1000000  >> "./reward_model_log_SAC_env_$envname.txt" 2>&1
+            python train_SAC.py --device=$device --env="$envname" --seed=$seed --actor_lr=$sac_lr --critic_lr=$sac_lr --steps=1000000 > "./SAC_env_"$envname"_seed_"$seed".log" 2>&1
             ;;
         esac
 
@@ -85,10 +74,10 @@ run_command() {
     elif [ "$algorithm" == "mrn" ]; then
         case "$envname" in
         *metaworld*)
-            python train_MRN.py --env="$envname" --seed=$seed --actor_lr=$sac_lr --critic_lr=$sac_lr  --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 --unsup_steps=9000 --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch=$reward_batch --reward_update=10 --feed_type=1 --meta_steps=$meta_steps --device=$device --eps_mistake="$eps_mistake" >> "./reward_model_log_MRN_env_"$envname"_feedback_"$feedback"_mistake_$eps_mistake.txt" 2>&1
+            python train_MRN.py --env="$envname" --seed=$seed --actor_lr=$sac_lr --critic_lr=$sac_lr  --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 --unsup_steps=9000 --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch=$reward_batch --reward_update=10 --feed_type=1 --meta_steps=$meta_steps --device=$device --eps_mistake="$eps_mistake" --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" > "./MRN_env_"$envname"_mistake_"$eps_mistake"_seed_"$seed".log" 2>&1
             ;;
         *)
-            python train_MRN.py --env="$envname" --seed=$seed --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch=$reward_batch --reward_update=50 --feed_type=1 --meta_steps=$meta_steps --device=$device --eps_mistake="$eps_mistake" >> "./reward_model_log_MRN_env_"$envname"_feedback_"$feedback"_mistake_$eps_mistake.txt" 2>&1
+            python train_MRN.py --env="$envname" --seed=$seed --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch=$reward_batch --reward_update=50 --feed_type=1 --meta_steps=$meta_steps --device=$device --eps_mistake="$eps_mistake" --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" > "./MRN_env_"$envname"_mistake_"$eps_mistake"_seed_"$seed".log" 2>&1
             ;;
         esac
 
@@ -96,10 +85,10 @@ run_command() {
     elif [ "$algorithm" == "pebble" ]; then
         case "$envname" in
         *metaworld*)
-            python train_PEBBLE"$robust_algo".py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=10 --feed_type=1 --eps_mistake="$eps_mistake" --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" > /dev/null 2>&1
+            python train_PEBBLE.py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=10 --feed_type=1 --eps_mistake="$eps_mistake" --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" > "./PEBBLE_env_"$envname"_mistake_"$eps_mistake"_seed_"$seed".log" 2>&1
             ;;
         *)
-            python train_PEBBLE"$robust_algo".py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=50 --feed_type=1 --eps_mistake="$eps_mistake" --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" > /dev/null 2>&1
+            python train_PEBBLE.py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=50 --feed_type=1 --eps_mistake="$eps_mistake" --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" > "./PEBBLE_env_"$envname"_mistake_"$eps_mistake"_seed_"$seed".log" 2>&1
             ;;
             
         esac
@@ -108,10 +97,10 @@ run_command() {
     elif [ "$algorithm" == "rime" ]; then
         case "$envname" in
         *metaworld*)
-            python train_RIME.py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=10 --feed_type=1 --eps_mistake="$eps_mistake" --least_reward_update=5 --threshold_variance='kl' --threshold_alpha=0.5 --threshold_beta_init=3.0 --threshold_beta_min=1.0 --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" >> "./log_RIME_env_"$envname"_feedback_"$feedback"_mistake_$eps_mistake.txt" 2>&1
+            python train_RIME.py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=10 --feed_type=1 --eps_mistake="$eps_mistake" --least_reward_update=5 --threshold_variance='kl' --threshold_alpha=0.5 --threshold_beta_init=3.0 --threshold_beta_min=1.0 --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" > "./RIME_env_"$envname"_mistake_"$eps_mistake"_seed_"$seed".log" 2>&1
             ;;
         *)
-            python train_RIME.py --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=$unsup_steps --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch=$reward_batch --reward_update=50 --feed_type=1 --device="$device" --eps_mistake="$eps_mistake" --least_reward_update=15 --threshold_variance='kl' --threshold_alpha=0.5 --threshold_beta_init=3.0 --threshold_beta_min=1.0 --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma"  #  >> "./log_RIME_env_"$envname"_feedback_"$feedback"_mistake_$eps_mistake.txt" 2>&1
+            python train_RIME.py --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=$unsup_steps --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch=$reward_batch --reward_update=50 --feed_type=1 --device="$device" --eps_mistake="$eps_mistake" --least_reward_update=15 --threshold_variance='kl' --threshold_alpha=0.5 --threshold_beta_init=3.0 --threshold_beta_min=1.0 --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" > "./RIME_env_"$envname"_mistake_"$eps_mistake"_seed_"$seed".log" 2>&1
             ;;
         esac
 
@@ -119,10 +108,10 @@ run_command() {
     elif [ "$algorithm" == "surf" ]; then
         case "$envname" in
         *metaworld*)
-            python train_SURF.py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=20 --feed_type=1 --eps_mistake="$eps_mistake" --inv_label_ratio=10 --threshold_u=$tau --mu=4 >> "./reward_model_log_SURF_env_"$envname"_feedback_"$feedback"_mistake_$eps_mistake.txt" 2>&1
+            python train_SURF.py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=20 --feed_type=1 --eps_mistake="$eps_mistake" --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" --inv_label_ratio=10 --threshold_u=$tau --mu=4 > "./SURF_env_"$envname"_mistake_"$eps_mistake"_seed_"$seed".log" 2>&1
             ;;
         *)
-            python train_SURF.py --device=$device --env="$envname" --seed=$seed --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch=$reward_batch --inv_label_ratio=20 --reward_update=100 --feed_type=1 --eps_mistake="$eps_mistake" --threshold_u=$tau --mu=4 >> "./reward_model_log_SURF_env_"$envname"_feedback_"$feedback"_mistake_$eps_mistake.txt" 2>&1
+            python train_SURF.py --device=$device --env="$envname" --seed=$seed --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch=$reward_batch --inv_label_ratio=100 --reward_update=1000 --feed_type=1 --eps_mistake="$eps_mistake" --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" --threshold_u=$tau --mu=4 > "./SURF_env_"$envname"_mistake_"$eps_mistake"_seed_"$seed".log" 2>&1
             ;;
         esac
 
@@ -130,15 +119,16 @@ run_command() {
     else
         case "$envname" in
         *metaworld*)
-            python train_RUNE.py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=10 --feed_type=1 --eps_mistake="$eps_mistake" --rho=$rho >> "./reward_model_log_RUNE_env_"$envname"_feedback_"$feedback"_mistake_$eps_mistake.txt" 2>&1
+            python train_RUNE.py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --batch_size=512 --critic_hidden_dim=256 --critic_hidden_depth=3 --actor_hidden_dim=256 --actor_hidden_depth=3 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=10 --feed_type=1 --eps_mistake="$eps_mistake" --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" --rho=$rho > "./RUNE_env_"$envname"_mistake_"$eps_mistake"_seed_"$seed".log" 2>&1
             ;;
         *)
-            python train_RUNE.py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=10 --feed_type=1 --eps_mistake="$eps_mistake" --rho=$rho >> "./reward_model_log_RUNE_env_"$envname"_feedback_"$feedback"_mistake_$eps_mistake.txt" 2>&1
+            python train_RUNE.py --device=$device --env="$envname" --seed="$seed" --actor_lr=$sac_lr --critic_lr=$sac_lr --unsup_steps=9000 --steps=1000000 --num_interact=$num_interact --max_feedback="$feedback" --reward_batch="$reward_batch" --reward_update=50 --feed_type=1 --eps_mistake="$eps_mistake" --eps_skip="$eps_skip" --eps_equal="$eps_equal" --teacher_gamma="$teacher_gamma" --rho=$rho > "./RUNE_env_"$envname"_mistake_"$eps_mistake"_seed_"$seed".log" 2>&1
             ;;
         esac
     fi
 }
 
+# Determine which GPU each seed is assigned to
 declare -A gpu_ids=(
     [12345]=0
     [23451]=1

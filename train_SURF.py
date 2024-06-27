@@ -12,7 +12,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import tqdm
-
 import utils
 from agent.sac import SACAgent
 from config.SURF import SURFConfig
@@ -89,7 +88,8 @@ class Workspace(object):
             lambda_u=cfg.lambda_u,
             mu=cfg.mu,
             dataaug_window=cfg.dataaug_window,
-            crop_range=cfg.crop_range)
+            crop_range=cfg.crop_range,
+        )
         
     def evaluate(self):
         average_episode_reward = 0
@@ -325,9 +325,6 @@ class Workspace(object):
             episode_step += 1
             self.step += 1
             interact_count += 1
-            
-        # self.agent.save(self.work_dir, self.step)
-        # self.reward_model.save(self.work_dir, self.step)
         
 
 def main():
@@ -338,9 +335,12 @@ def main():
     parser.add_argument('--inv_label_ratio', type=int)
     parser.add_argument('--dataaug_window', type=int)
     parser.add_argument('--crop_range', type=int)
+    
     parser.add_argument('--seed', type=int)
     parser.add_argument('--device', type=str)
     parser.add_argument('--eps_equal', type=float)
+    parser.add_argument('--eps_skip', type=float)
+    parser.add_argument('--teacher_gamma', type=float)
     parser.add_argument('--env', type=str)
     parser.add_argument('--actor_lr', type=float)
     parser.add_argument('--critic_lr', type=float)
@@ -350,7 +350,6 @@ def main():
     parser.add_argument('--max_feedback', type=int)
     parser.add_argument('--reward_batch', type=int)
     parser.add_argument('--reward_update', type=int)
-    
     parser.add_argument('-b', '--batch_size', type=int)
     parser.add_argument('--critic_hidden_dim', type=int)
     parser.add_argument('--actor_hidden_dim', type=int)

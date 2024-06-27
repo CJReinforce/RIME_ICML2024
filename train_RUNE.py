@@ -11,6 +11,7 @@ import time
 import pickle as pkl
 import tqdm
 
+import utils
 from logger import Logger
 from replay_buffer_explore import ReplayBuffer
 from reward_model_explore import RewardModel, set_device
@@ -18,14 +19,13 @@ from collections import deque
 from agent.sac_explore import SACAgent_Explore as SACAgent
 from config.RUNE import RUNEConfig
 
-import utils
 
 class Workspace(object):
     def __init__(self, cfg):
         self.work_dir = os.getcwd()
         self.cfg = cfg
         self.logger = Logger(
-            os.path.join(self.work_dir, 'RUNE_logs', cfg.env),
+            os.path.join(self.work_dir, 'RUNE', cfg.env),
             save_tb=cfg.log_save_tb,
             log_frequency=cfg.log_frequency,
             agent=cfg.agent_name,
@@ -77,13 +77,14 @@ class Workspace(object):
             teacher_gamma=cfg.teacher_gamma, 
             teacher_eps_mistake=cfg.teacher_eps_mistake, 
             teacher_eps_skip=cfg.teacher_eps_skip, 
-            teacher_eps_equal=cfg.teacher_eps_equal)
+            teacher_eps_equal=cfg.teacher_eps_equal,
+        )
         
     def evaluate(self):
         average_episode_reward = 0
         average_true_episode_reward = 0
         success_rate = 0
-        num_eval_episodes = self.cfg.num_eval_episodes if self.step < self.cfg.num_train_steps - 10*self.cfg.eval_frequency else 100
+        num_eval_episodes = self.cfg.num_eval_episodes
         
         for episode in range(num_eval_episodes):
             obs = self.env.reset()
@@ -316,35 +317,34 @@ class Workspace(object):
             episode_step += 1
             self.step += 1
             interact_count += 1
-            
-        # self.agent.save(self.work_dir, self.step)
-        # self.reward_model.save(self.work_dir, self.step)
-
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--device', type=str, default='cuda:0')
-    parser.add_argument('--eps_equal', type=float, default=0.0)
-    parser.add_argument('--env', type=str, default='walker_walk')
-    parser.add_argument('--actor_lr', type=float, default=5e-4)
-    parser.add_argument('--critic_lr', type=float, default=5e-4)
-    parser.add_argument('--unsup_steps', type=int, default=9000)
-    parser.add_argument('--steps', type=int, default=500_000)
-    parser.add_argument('--num_interact', type=int, default=20000)
-    parser.add_argument('--max_feedback', type=int, default=1000)
-    parser.add_argument('--reward_batch', type=int, default=100)
-    parser.add_argument('--reward_update', type=int, default=50)
-    parser.add_argument('-b', '--batch_size', type=int, default=1024)
-    parser.add_argument('--critic_hidden_dim', type=int, default=1024)
-    parser.add_argument('--actor_hidden_dim', type=int, default=1024)
-    parser.add_argument('--critic_hidden_depth', type=int, default=2)
-    parser.add_argument('--actor_hidden_depth', type=int, default=2)
-    parser.add_argument('--eps_mistake', type=float, default=0.0)
-    parser.add_argument('--feed_type', type=int, default=0)
-    parser.add_argument('--ensemble_size', type=int, default=3)
-    parser.add_argument('--rho', type=float, default=0.00001)
+    parser.add_argument('--seed', type=int)
+    parser.add_argument('--device', type=str)
+    parser.add_argument('--eps_equal', type=float)
+    parser.add_argument('--eps_skip', type=float)
+    parser.add_argument('--teacher_gamma', type=float)
+    parser.add_argument('--env', type=str)
+    parser.add_argument('--actor_lr', type=float)
+    parser.add_argument('--critic_lr', type=float)
+    parser.add_argument('--unsup_steps', type=int)
+    parser.add_argument('--steps', type=int)
+    parser.add_argument('--num_interact', type=int)
+    parser.add_argument('--max_feedback', type=int)
+    parser.add_argument('--reward_batch', type=int)
+    parser.add_argument('--reward_update', type=int)
+    parser.add_argument('-b', '--batch_size', type=int)
+    parser.add_argument('--critic_hidden_dim', type=int)
+    parser.add_argument('--actor_hidden_dim', type=int)
+    parser.add_argument('--critic_hidden_depth', type=int)
+    parser.add_argument('--actor_hidden_depth', type=int)
+    parser.add_argument('--eps_mistake', type=float)
+    parser.add_argument('--feed_type', type=int)
+    parser.add_argument('--ensemble_size', type=int)
+    
+    parser.add_argument('--rho', type=float)
     args = parser.parse_args()
     cfg = RUNEConfig(args)
     set_device(cfg.device)

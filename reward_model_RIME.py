@@ -43,9 +43,6 @@ class RIMERewardModel(RewardModel):
         self.num_warmup_steps = num_warmup_steps
 
         self.update_step = 0
-
-        # debug
-        self.history_info = {}
     
     def set_lr_schedule(self):
         self.lr_schedule = get_constant_schedule_with_warmup(self.opt, self.num_warmup_steps)
@@ -103,41 +100,6 @@ class RIMERewardModel(RewardModel):
         
         # update KL divergence statistics of trust samples
         self.KL_div.update(KL_div[trust_sample_bool_index].numpy())
-
-        ## debug info start...
-        # accuracy of predicted trust samples
-        accurate_samples = (self.buffer_label[:max_len][trust_sample_bool_index] == self.buffer_GT_label[:max_len][trust_sample_bool_index]).sum()
-        trust_samples = len(trust_sample_index)
-        accuracy = accurate_samples / trust_samples
-        # recall of predicted trust samples
-        recall_samples = (self.buffer_label[:max_len][~trust_sample_bool_index] == self.buffer_GT_label[:max_len][~trust_sample_bool_index]).sum()
-        non_trust_samples = max_len - trust_samples
-        recall = recall_samples / non_trust_samples if non_trust_samples > 0 else 0.0
-        # flipping accuracy
-        flipping_correct = (1 - self.buffer_label[flipping_sample_index] == self.buffer_GT_label[flipping_sample_index]).sum()
-        flipping_samples = len(flipping_sample_index)
-        flipping_accuracy = flipping_correct / flipping_samples if flipping_samples > 0 else 0.0
-
-        if debug:
-            print('#'*10, self.seed, '#'*10)
-            self.history_info = {
-                'trust sample ratio': len(trust_sample_index)/max_len, 
-                'KL_div': self.KL_div.max, 
-                'predict_label_div': predict_label[:, 0].std(0).item(), 
-                'beta': self.get_threshold_beta(), 
-                'baseline': baseline, 
-                'uncertainty': uncertainty, 
-                'threshold': baseline+uncertainty, 
-                'flipping_threshold': flipping_threshold, 
-                'update_step': self.update_step,
-                'lr': self.lr_schedule.get_last_lr()[0],
-                'seed': self.seed,
-                'accuracy': [accurate_samples, trust_samples, accuracy], 
-                'recall': [recall_samples, non_trust_samples, recall], 
-                'flipping_accuracy': [flipping_correct, flipping_samples, flipping_accuracy]
-            }
-            print(self.history_info)
-        ## debug info end...
 
         if trust_sample and label_flipping:
             # temporarily flipping

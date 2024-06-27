@@ -1,5 +1,5 @@
 from torch.cuda import is_available
-from time import time
+
 
 class RIMEConfig:
     def __init__(self, args):
@@ -68,8 +68,8 @@ class RIMEConfig:
         # log settings
         self.log_save_tb = False
         self.log_frequency = 1000
-        self.eval_log_name = f'eval_RIME_mistake_{self.teacher_eps_mistake}_alpha_{self.threshold_alpha}_seed_{self.seed}_{time()}'
-        self.train_log_name = f'train_RIME_mistake_{self.teacher_eps_mistake}_alpha_{self.threshold_alpha}_seed_{self.seed}_{time()}'
+        self.eval_log_name = f'eval_RIME_mistake_{self.teacher_eps_mistake}_seed_{self.seed}'
+        self.train_log_name = f'train_RIME_mistake_{self.teacher_eps_mistake}_seed_{self.seed}'
 
         # scheduling
         self.reward_schedule = 0
