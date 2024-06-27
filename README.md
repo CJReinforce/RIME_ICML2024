@@ -1,6 +1,5 @@
-<!-- <h1 align='center' style="text-align:center; font-weight:bold; font-size:2.0em;letter-spacing:2.0px;"> RIME: Robust Preference-based Reinforcement Learning with Noisy Preferences </h1> -->
-
-# RIME: Robust Preference-based Reinforcement Learning with Noisy Preferences
+<h1 align='center' style="text-align:center; font-weight:bold; font-size:2.0em;letter-spacing:2.0px;"> RIME: Robust Preference-based Reinforcement Learning <br>
+	with Noisy Preferences </h1>
 
 <p align='center' style="text-align:center;font-size:1.25em;">
     <a href="https://scholar.google.com/citations?user=IOiro9MAAAAJ" target="_blank" style="text-decoration: none;">Jie Cheng<sup>1,2</sup></a>&nbsp;,&nbsp;
