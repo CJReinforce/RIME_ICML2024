@@ -1,5 +1,5 @@
-<h1 align='center' style="text-align:center; font-weight:bold; font-size:2.0em;letter-spacing:2.0px;"> RIME: Robust Preference-based Reinforcement Learning <br>
-	with Noisy Preferences </h1>
+<h1 align='center' style="text-align:center; font-weight:bold; font-size:2.0em;letter-spacing:2.0px;"> RIME: Robust Preference-based Reinforcement Learning <br> with Noisy Preferences </h1>
+
 
 <p align='center' style="text-align:center;font-size:1.25em;">
     <a href="https://scholar.google.com/citations?user=IOiro9MAAAAJ" target="_blank" style="text-decoration: none;">Jie Cheng<sup>1,2</sup></a>&nbsp;,&nbsp;
@@ -12,8 +12,6 @@
 <sup>1</sup>State Key Laboratory of Multimodal Artificial Intelligence Systems, CASIA&nbsp;&nbsp;&nbsp;<br>
 <sup>2</sup>School of Artificial Intelligence, the University of Chinese Academy of Sciences&nbsp;&nbsp;&nbsp;
 </p>
-
-
 <p align='center';>
 <b>
 <em>ICML 2024 Spotlight</em> <br>
@@ -25,10 +23,6 @@
     <a href="https://github.com/CJReinforce/RIME_ICML2024" target="_blank" style="text-decoration: none;">[Code]</a>
 </b>
 </p>
-
-<!-- ## Abstract
-
-Preference-based Reinforcement Learning (PbRL) avoids the need for reward engineering by harnessing human preferences as the reward signal. However, current PbRL methods over-reliance on high-quality feedback from domain experts, which results in a lack of robustness. In this paper, we present RIME, a robust PbRL algorithm for effective reward learning from noisy preferences. Our method utilizes a sample selection-based discriminator to dynamically filter denoised preferences for robust training. To mitigate the accumulated error caused by incorrect selection, we propose to warm start the reward model, which additionally bridges the performance gap during the transition from pre-training to online training in PbRL. Our experiments on robotic manipulation and locomotion tasks demonstrate that RIME significantly enhances the robustness of the current state-of-the-art PbRL method. -->
 
 ## Requirements
 
@@ -87,7 +81,7 @@ For real human teachers (requires online annotation):
 bash run_human_labeller.sh
 ```
 
-When entering the annotation phase, run `label_program.ipynb` to annotate human preferences.
+When entering the annotation phase, run `label_program.ipynb` to annotate human preferences. The experimental result of RIME annotated by non-robotics students (detailed in Section 5.3) can be seen in [this GIF](https://raw.githubusercontent.com/CJReinforce/RIME_ICML2024/main/assets/hopper_backflip.gif).
 
 ## Acknowledgement
 
