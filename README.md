@@ -36,7 +36,7 @@ Preference-based Reinforcement Learning (PbRL) avoids the need for reward engine
 
 ```bash
 sudo apt update
-sudo apt install unzip gcc libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf libegl1 libopengl0
+sudo apt install -y unzip gcc libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf libegl1 libopengl0
 sudo ln -s /usr/lib/x86_64-linux-gnu/libGL.so.1 /usr/lib/x86_64-linux-gnu/libGL.so
 mkdir ~/.mujoco
 cd ~/.mujoco
