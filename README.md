@@ -20,6 +20,12 @@
 <em>ICML 2024 Spotlight</em> <br>
 </b>
 </p>
+<p align='center' style="text-align:center;font-size:2.5 em;">
+<b>
+    <a href="https://arxiv.org/abs/2402.17257" target="_blank" style="text-decoration: none;">[Paper]</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <a href="https://github.com/CJReinforce/RIME_ICML2024" target="_blank" style="text-decoration: none;">[Code]</a>
+</b>
+</p>
 
 <!-- ## Abstract
 
