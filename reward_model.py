@@ -1,12 +1,11 @@
-import time
 import os
+import time
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from scipy.stats import norm
-
 from video import VideoRecorder
 
 device = 'cuda:0'
@@ -396,7 +395,7 @@ class RewardModel:
             self.buffer_index = next_index
         
         temp = (self.buffer_label == self.buffer_GT_label)[:self.buffer_index]
-        print(f'Annotated label / GT label = : {temp.sum()} / {temp.size} = {temp.sum()/temp.size}')
+        # print(f'Annotated label / GT label = : {temp.sum()} / {temp.size} = {temp.sum()/temp.size}')
             
     def get_label(self, sa_t_1, sa_t_2, r_t_1, r_t_2):
         sum_r_t_1 = np.sum(r_t_1, axis=1)
@@ -588,7 +587,7 @@ class RewardModel:
         return len(labels)
     
     def uniform_sampling_with_human_labeller(self):
-        print('uniform sampling query...')
+        print('uniform sampling queries...')
         # get queries
         sa_t_1, sa_t_2, r_t_1, r_t_2 = self.get_queries(
             mb_size=self.mb_size)
@@ -643,7 +642,7 @@ class RewardModel:
         return len(labels)
     
     def disagreement_sampling_with_human_labeller(self):
-        print('disagreement sampling query...')
+        print('disagreement sampling queries...')
         
         # get queries
         sa_t_1, sa_t_2, r_t_1, r_t_2 =  self.get_queries(
