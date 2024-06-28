@@ -8,7 +8,7 @@ run_command() {
     teacher_gamma=1.0
     
     # run which algorithm, in [sac, pebble, surf, rune, mrn, rime]
-    algorithm='pebble'
+    algorithm='rime'
 
     # parameters that change with env for algorithms
     # RIME
@@ -20,29 +20,29 @@ run_command() {
     # SURF
     tau=0.99
 
-    envname="walker_walk"
-    sac_lr=0.0005
-    num_interact=20000
-    feedback=1000
-    reward_batch=50
+    # envname="walker_walk"
+    # sac_lr=0.0005
+    # num_interact=20000
+    # feedback=1000
+    # reward_batch=100
 
     # envname="cheetah_run"
     # sac_lr=0.0005
     # num_interact=20000
-    # feedback=10000
-    # reward_batch=500
+    # feedback=1000
+    # reward_batch=100
 
     # envname="quadruped_walk"
     # sac_lr=0.0001
     # num_interact=30000
-    # feedback=2000
-    # reward_batch=200
+    # feedback=4000
+    # reward_batch=400
 
-    # envname="metaworld_button-press-v2"
-    # sac_lr=0.0003
-    # num_interact=5000
-    # feedback=20000
-    # reward_batch=100
+    envname="metaworld_button-press-v2"
+    sac_lr=0.0003
+    num_interact=5000
+    feedback=20000
+    reward_batch=100
 
     # envname="metaworld_sweep-into-v2"
     # sac_lr=0.0003
@@ -53,8 +53,8 @@ run_command() {
     # envname="metaworld_hammer-v2"
     # sac_lr=0.0003
     # num_interact=5000
-    # feedback=20000
-    # reward_batch=100
+    # feedback=80000
+    # reward_batch=400
 
     seed=$1
     device="cuda:${gpu_ids[$seed]}"
@@ -135,11 +135,11 @@ declare -A gpu_ids=(
     [34512]=2
     [45123]=3
     [51234]=4
-    [67890]=0
-    [68790]=1
-    [78906]=2
-    [89067]=3
-    [90678]=4
+    [67890]=5
+    [68790]=6
+    [78906]=7
+    [89067]=0
+    [90678]=1
 )
 
 seeds=(12345 23451 34512 45123 51234 67890 68790 78906 89067 90678)

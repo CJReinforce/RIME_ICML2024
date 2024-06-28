@@ -60,6 +60,8 @@ pip install git+https://github.com/rlworkgroup/metaworld.git@04be337a12305e393c0
 pip install torch==1.9.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
+You could run `python -c "import mujoco_py; print(mujoco_py.__version__)"` to check if `mujoco-py` is installed properly. If not, see [FAQ](https://github.com/CJReinforce/RIME_ICML2024?tab=readme-ov-file#faq).
+
 ## Get Started
 
 ### Configs
@@ -96,4 +98,13 @@ This repo benefits from [BPref](https://github.com/rll-research/BPref), [SURF](h
   journal={arXiv preprint arXiv:2402.17257},
   year={2024}
 }
+```
+
+## FAQ
+
+1. `GLIBCXX_3.4.30` not found.
+
+```bash
+conda install gcc=12.1.0
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/miniconda3/env/rime/lib
 ```
