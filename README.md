@@ -92,11 +92,14 @@ This repo benefits from [BPref](https://github.com/rll-research/BPref), [SURF](h
 ## Citation
 
 ```latex
-@article{cheng2024rime,
-  title={RIME: Robust Preference-based Reinforcement Learning with Noisy Preferences},
-  author={Cheng, Jie and Xiong, Gang and Dai, Xingyuan and Miao, Qinghai and Lv, Yisheng and Wang, Fei-Yue},
-  journal={arXiv preprint arXiv:2402.17257},
-  year={2024}
+@InProceedings{cheng2024rime,
+  title = 	 {{RIME}: Robust Preference-based Reinforcement Learning with Noisy Preferences},
+  author =       {Cheng, Jie and Xiong, Gang and Dai, Xingyuan and Miao, Qinghai and Lv, Yisheng and Wang, Fei-Yue},
+  booktitle = 	 {Proceedings of the 41st International Conference on Machine Learning},
+  pages = 	 {8229--8247},
+  year = 	 {2024},
+  volume = 	 {235},
+  publisher =    {PMLR}
 }
 ```
 
